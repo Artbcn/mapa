@@ -127,12 +127,35 @@
     body { background: white; padding: 0; }
     .floor, .legend { box-shadow: none; border: 1px solid #ddd; }
   }
+  .datos{ background:white; border-radius:12px; padding:20px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  .datos h2{ font-size:18px; font-weight:600; margin:0 0 4px 0; }
+  .datos .sub{ color:#5f5e5a; font-size:13px; margin-bottom:16px; }
+  .dgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:10px; }
+  .drow{ border:1px solid #e5e2d8; border-radius:10px; padding:10px 12px; }
+  .drow .h{ font-weight:700; font-size:15px; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+  .drow .savedTag{ font-size:10px; font-weight:700; color:#8a8778; opacity:0; transition:opacity .3s; }
+  .drow .savedTag.show{ opacity:1; color:#3B8F3B; }
+  .drow label{ display:block; font-size:11px; color:#8a8778; text-transform:uppercase; letter-spacing:.03em; margin:8px 0 3px; }
+  .drow input[type=text]{ width:100%; border:1px solid #e5e2d8; border-radius:7px; padding:7px 8px; font-family:inherit; font-size:13.5px; box-sizing:border-box; }
+  .llaveBtns{ display:flex; gap:6px; }
+  .llaveBtns button{ flex:1; border:1.5px solid #e5e2d8; background:#fff; border-radius:7px; padding:7px 4px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; color:#5f5e5a; }
+  .llaveBtns button.on-ok{ background:#e6f3e6; border-color:#3B8F3B; color:#1f5c1f; }
+  .llaveBtns button.on-no{ background:#f1efe8; border-color:#888780; color:#2c2c2a; }
+  .llaveBtns button.on-falla{ background:#fbe6e6; border-color:#c0392b; color:#7a1f16; }
+  .connErr{ display:none; background:#fbe6e6; color:#7a1f16; border-radius:8px; padding:10px 14px; font-size:13px; margin-bottom:14px; }
 </style>
 </head>
 <body>
 <div class="container">
   <h1>Mapa orientativo del hotel</h1>
   <p class="subtitle">Distribución de habitaciones por piso y tipo</p>
+
+  <div class="datos">
+    <h2>Color del suelo del baño y llave maestra</h2>
+    <div class="sub">Se guarda y se actualiza solo — lo que carga una, lo ve la otra al toque.</div>
+    <div class="connErr" id="connErr">No se pudo conectar. Los cambios no se están guardando — revisá la conexión y recargá.</div>
+    <div class="dgrid" id="dgrid"></div>
+  </div>
 
   <div class="floor">
     <h2>Terminan en 3 → Matrimonial, sin balcón</h2>
@@ -222,5 +245,99 @@
     </div>
   </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SB_URL = "https://nevhnfkbrwwelmokspzt.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ldmhuZmticnd3ZWxtb2tzcHp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ3MzA0NDgsImV4cCI6MjEwMDMwNjQ0OH0.fk05FBrzZZoqtBvz--jeWBWiHmbi6U-rSY4uzJXCMQY";
+let sb = null;
+try{ sb = supabase.createClient(SB_URL, SB_KEY); }catch(e){}
+
+const HABS = ["101","102","103","104","105","106","107","201","202","203","204","205","206","207",
+              "301","302","303","304","305","306","307","401","402","403","404","405","406","407"];
+const LLAVE_OPTS = [["ok","✓ OK"],["no_probada","Sin probar"],["falla","✕ Falla"]];
+let datos = {};
+
+function esc(s){ return String(s ?? "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+function drawGrid(){
+  const grid = document.getElementById("dgrid");
+  grid.innerHTML = HABS.map(hab => {
+    const d = datos[hab] || {};
+    const llave = d.llave_maestra || "";
+    return `<div class="drow" data-hab="${hab}">
+      <div class="h"><span>${hab}</span><span class="savedTag" id="saved-${hab}">✓ guardado</span></div>
+      <label>Color del suelo del baño</label>
+      <input type="text" class="colorInput" data-hab="${hab}" value="${esc(d.color_suelo_bano || "")}" placeholder="ej: gris, negro, blanco...">
+      <label>Llave maestra</label>
+      <div class="llaveBtns">
+        ${LLAVE_OPTS.map(([val,label]) => `<button class="${llave===val ? 'on-'+val : ''}" data-hab="${hab}" data-val="${val}">${label}</button>`).join("")}
+      </div>
+    </div>`;
+  }).join("");
+  wireGrid();
+}
+
+function wireGrid(){
+  document.querySelectorAll(".colorInput").forEach(inp => {
+    inp.addEventListener("change", () => guardar(inp.dataset.hab, { color_suelo_bano: inp.value.trim() }));
+  });
+  document.querySelectorAll(".llaveBtns button").forEach(btn => {
+    btn.addEventListener("click", () => guardar(btn.dataset.hab, { llave_maestra: btn.dataset.val }));
+  });
+}
+
+async function guardar(hab, cambios){
+  datos[hab] = { ...(datos[hab]||{}), ...cambios };
+  // repinto solo los botones de llave de esa fila para que se vea el cambio al toque
+  const row = document.querySelector(`.drow[data-hab="${hab}"]`);
+  if (row){
+    row.querySelectorAll(".llaveBtns button").forEach(b => {
+      b.classList.toggle("on-"+b.dataset.val, datos[hab].llave_maestra === b.dataset.val);
+    });
+  }
+  if (!sb){ document.getElementById("connErr").style.display = "block"; return; }
+  try{
+    const { error } = await sb.from("mapa_datos").upsert({ hab, ...cambios, updated_at: new Date().toISOString() });
+    if (error) throw error;
+    document.getElementById("connErr").style.display = "none";
+    const tag = document.getElementById("saved-"+hab);
+    if (tag){ tag.classList.add("show"); setTimeout(() => tag.classList.remove("show"), 1500); }
+  }catch(e){
+    document.getElementById("connErr").style.display = "block";
+  }
+}
+
+async function cargar(){
+  if (!sb){ document.getElementById("connErr").style.display = "block"; drawGrid(); return; }
+  try{
+    const { data, error } = await sb.from("mapa_datos").select("*");
+    if (error) throw error;
+    datos = {};
+    (data || []).forEach(r => { datos[r.hab] = r; });
+    document.getElementById("connErr").style.display = "none";
+  }catch(e){
+    document.getElementById("connErr").style.display = "block";
+  }
+  drawGrid();
+}
+
+function subscribeLive(){
+  if (!sb) return;
+  try{
+    sb.channel("mapa_datos_ch").on("postgres_changes", { event: "*", schema: "public", table: "mapa_datos" }, payload => {
+      const row = payload.new || payload.old || {};
+      if (!row.hab) return;
+      datos[row.hab] = payload.new || datos[row.hab];
+      // si estoy escribiendo justo en ese apto, no le piso el input mientras tipeo
+      const activo = document.activeElement;
+      if (activo && activo.dataset && activo.dataset.hab === row.hab && activo.tagName === "INPUT") return;
+      drawGrid();
+    }).subscribe(status => { if (["CLOSED","CHANNEL_ERROR","TIMED_OUT"].includes(status)) setTimeout(subscribeLive, 3000); });
+  }catch(e){}
+}
+
+cargar();
+subscribeLive();
+</script>
 </body>
 </html>
