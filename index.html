@@ -42,16 +42,21 @@
   }
   .rooms {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
     gap: 10px;
   }
   .room {
     border-radius: 8px;
-    padding: 12px 10px;
-    text-align: center;
+    padding: 10px 12px;
     border-width: 2px;
     border-style: solid;
   }
+  .room .roomTop{
+    display:flex; align-items:center; gap:7px; margin-bottom:8px;
+  }
+  .room .llaveDot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; background:#c7c3b6; }
+  .room .llaveDot.ok{ background:#3B8F3B; }
+  .room .llaveDot.falla{ background:#c0392b; }
   .room .num {
     font-size: 17px;
     font-weight: 600;
@@ -60,7 +65,16 @@
     font-size: 11px;
     margin-top: 4px;
     line-height: 1.3;
+    margin-bottom: 8px;
   }
+  .room label{ display:block; font-size:9.5px; text-transform:uppercase; letter-spacing:.03em; opacity:.75; margin:6px 0 2px; }
+  .room input[type=text]{ width:100%; border:1px solid rgba(0,0,0,.15); border-radius:6px; padding:5px 6px; font-family:inherit; font-size:12.5px; box-sizing:border-box; background:rgba(255,255,255,.6); }
+  .room .llaveBtns{ display:flex; gap:4px; }
+  .room .llaveBtns button{ flex:1; border:1.5px solid rgba(0,0,0,.15); background:rgba(255,255,255,.55); border-radius:6px; padding:4px 2px; font-size:10.5px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .room .llaveBtns button.on-ok{ background:#3B8F3B; border-color:#3B8F3B; color:#fff; }
+  .room .llaveBtns button.on-no_probada{ background:#8a8778; border-color:#8a8778; color:#fff; }
+  .room .llaveBtns button.on-falla{ background:#c0392b; border-color:#c0392b; color:#fff; }
+  .connErr{ display:none; background:#fbe6e6; color:#7a1f16; border-radius:8px; padding:10px 14px; font-size:13px; margin-bottom:14px; }
 
   /* Colores por tipo */
   .matrimonial-sin { background: #FAECE7; border-color: #D85A30; }
@@ -127,105 +141,16 @@
     body { background: white; padding: 0; }
     .floor, .legend { box-shadow: none; border: 1px solid #ddd; }
   }
-  .datos{ background:white; border-radius:12px; padding:20px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
-  .datos h2{ font-size:18px; font-weight:600; margin:0 0 4px 0; }
-  .datos .sub{ color:#5f5e5a; font-size:13px; margin-bottom:16px; }
-  .dgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:10px; }
-  .drow{ border:1px solid #e5e2d8; border-radius:10px; padding:10px 12px; }
-  .drow .h{ font-weight:700; font-size:15px; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
-  .drow .savedTag{ font-size:10px; font-weight:700; color:#8a8778; opacity:0; transition:opacity .3s; }
-  .drow .savedTag.show{ opacity:1; color:#3B8F3B; }
-  .drow label{ display:block; font-size:11px; color:#8a8778; text-transform:uppercase; letter-spacing:.03em; margin:8px 0 3px; }
-  .drow input[type=text]{ width:100%; border:1px solid #e5e2d8; border-radius:7px; padding:7px 8px; font-family:inherit; font-size:13.5px; box-sizing:border-box; }
-  .llaveBtns{ display:flex; gap:6px; }
-  .llaveBtns button{ flex:1; border:1.5px solid #e5e2d8; background:#fff; border-radius:7px; padding:7px 4px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; color:#5f5e5a; }
-  .llaveBtns button.on-ok{ background:#e6f3e6; border-color:#3B8F3B; color:#1f5c1f; }
-  .llaveBtns button.on-no{ background:#f1efe8; border-color:#888780; color:#2c2c2a; }
-  .llaveBtns button.on-falla{ background:#fbe6e6; border-color:#c0392b; color:#7a1f16; }
-  .connErr{ display:none; background:#fbe6e6; color:#7a1f16; border-radius:8px; padding:10px 14px; font-size:13px; margin-bottom:14px; }
 </style>
 </head>
 <body>
 <div class="container">
   <h1>Mapa orientativo del hotel</h1>
-  <p class="subtitle">Distribución de habitaciones por piso y tipo</p>
+  <p class="subtitle">Distribución de habitaciones por piso y tipo — tocá cada apartamento para cargar sus datos</p>
 
-  <div class="datos">
-    <h2>Color del suelo del baño y llave maestra</h2>
-    <div class="sub">Se guarda y se actualiza solo — lo que carga una, lo ve la otra al toque.</div>
-    <div class="connErr" id="connErr">No se pudo conectar. Los cambios no se están guardando — revisá la conexión y recargá.</div>
-    <div class="dgrid" id="dgrid"></div>
-  </div>
+  <div class="connErr" id="connErr">No se pudo conectar. Los cambios no se están guardando — revisá la conexión y recargá.</div>
 
-  <div class="floor">
-    <h2>Terminan en 3 → Matrimonial, sin balcón</h2>
-    <div class="rooms">
-      <div class="room matrimonial-sin"><div class="num">103</div></div>
-      <div class="room matrimonial-sin"><div class="num">203</div></div>
-      <div class="room matrimonial-sin"><div class="num">303</div></div>
-      <div class="room matrimonial-sin"><div class="num">403</div></div>
-    </div>
-  </div>
-
-  <div class="floor">
-    <h2>Terminan en 5 → 1 dormitorio, cama matrimonial, con balcón</h2>
-    <div class="rooms">
-      <div class="room un-dormitorio"><div class="num">105</div></div>
-      <div class="room un-dormitorio"><div class="num">205</div></div>
-      <div class="room un-dormitorio"><div class="num">305</div></div>
-      <div class="room un-dormitorio"><div class="num">405</div></div>
-    </div>
-  </div>
-
-  <div class="floor">
-    <h2>Terminan en 2 → 2 dormitorios, camas twin, con balcón</h2>
-    <div class="rooms">
-      <div class="room dos-dormitorios"><div class="num">102</div></div>
-      <div class="room dos-dormitorios"><div class="num">202</div></div>
-      <div class="room dos-dormitorios"><div class="num">302</div></div>
-      <div class="room dos-dormitorios"><div class="num">402</div></div>
-    </div>
-  </div>
-
-  <div class="floor">
-    <h2>Terminan en 01 → Twin, sin balcón, con repisa</h2>
-    <div class="rooms">
-      <div class="room twin-repisa"><div class="num">101</div></div>
-      <div class="room twin-repisa"><div class="num">201</div></div>
-      <div class="room twin-repisa"><div class="num">301</div></div>
-      <div class="room twin-repisa"><div class="num">401</div></div>
-    </div>
-  </div>
-
-  <div class="floor">
-    <h2>Terminan en 07 → Twin, sin balcón</h2>
-    <div class="rooms">
-      <div class="room twin-sin"><div class="num">107</div></div>
-      <div class="room twin-sin"><div class="num">207</div></div>
-      <div class="room twin-sin"><div class="num">307</div></div>
-      <div class="room twin-sin"><div class="num">407</div></div>
-    </div>
-  </div>
-
-  <div class="floor">
-    <h2>104 y 106 → Interior, con terraza</h2>
-    <div class="rooms">
-      <div class="room interior-terraza"><div class="num">104</div></div>
-      <div class="room interior-terraza"><div class="num">106</div></div>
-    </div>
-  </div>
-
-  <div class="floor">
-    <h2>Resto de 04 y 06 → Interior, sin terraza</h2>
-    <div class="rooms">
-      <div class="room interior-sin"><div class="num">204</div></div>
-      <div class="room interior-sin"><div class="num">206</div></div>
-      <div class="room interior-sin"><div class="num">304</div></div>
-      <div class="room interior-sin"><div class="num">306</div></div>
-      <div class="room interior-sin"><div class="num">404</div></div>
-      <div class="room interior-sin"><div class="num">406</div></div>
-    </div>
-  </div>
+  <div id="floorsContainer"></div>
 
   <div class="legend">
     <h2>Referencias</h2>
@@ -252,34 +177,51 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 let sb = null;
 try{ sb = supabase.createClient(SB_URL, SB_KEY); }catch(e){}
 
-const HABS = ["101","102","103","104","105","106","107","201","202","203","204","205","206","207",
-              "301","302","303","304","305","306","307","401","402","403","404","405","406","407"];
+/* misma agrupación y colores que tenía el mapa original */
+const FLOORS = [
+  { title: "Terminan en 3 → Matrimonial, sin balcón", cls: "matrimonial-sin", habs: ["103","203","303","403"] },
+  { title: "Terminan en 5 → 1 dormitorio, cama matrimonial, con balcón", cls: "un-dormitorio", habs: ["105","205","305","405"] },
+  { title: "Terminan en 2 → 2 dormitorios, camas twin, con balcón", cls: "dos-dormitorios", habs: ["102","202","302","402"] },
+  { title: "Terminan en 01 → Twin, sin balcón, con repisa", cls: "twin-repisa", habs: ["101","201","301","401"] },
+  { title: "Terminan en 07 → Twin, sin balcón", cls: "twin-sin", habs: ["107","207","307","407"] },
+  { title: "104 y 106 → Interior, con terraza", cls: "interior-terraza", habs: ["104","106"] },
+  { title: "Resto de 04 y 06 → Interior, sin terraza", cls: "interior-sin", habs: ["204","206","304","306","404","406"] }
+];
 const LLAVE_OPTS = [["ok","✓ OK"],["no_probada","Sin probar"],["falla","✕ Falla"]];
 let datos = {};
 
 function esc(s){ return String(s ?? "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
-function drawGrid(){
-  const grid = document.getElementById("dgrid");
-  grid.innerHTML = HABS.map(hab => {
-    const d = datos[hab] || {};
-    const llave = d.llave_maestra || "";
-    return `<div class="drow" data-hab="${hab}">
-      <div class="h"><span>${hab}</span><span class="savedTag" id="saved-${hab}">✓ guardado</span></div>
-      <label>Color del suelo del baño</label>
-      <input type="text" class="colorInput" data-hab="${hab}" value="${esc(d.color_suelo_bano || "")}" placeholder="ej: gris, negro, blanco...">
-      <label>Llave maestra</label>
-      <div class="llaveBtns">
-        ${LLAVE_OPTS.map(([val,label]) => `<button class="${llave===val ? 'on-'+val : ''}" data-hab="${hab}" data-val="${val}">${label}</button>`).join("")}
-      </div>
-    </div>`;
-  }).join("");
+function roomHtml(hab, cls){
+  const d = datos[hab] || {};
+  const llave = d.llave_maestra || "";
+  const dotCls = llave === "ok" ? "ok" : llave === "falla" ? "falla" : "";
+  return `<div class="room ${cls}" data-hab="${hab}">
+    <div class="roomTop"><span class="llaveDot ${dotCls}"></span><span class="num">${hab}</span></div>
+    <label>Color suelo baño</label>
+    <input type="text" class="colorInput" data-hab="${hab}" data-field="color_suelo_bano" value="${esc(d.color_suelo_bano || "")}" placeholder="gris, negro...">
+    <label>TV</label>
+    <input type="text" class="colorInput" data-hab="${hab}" data-field="tv" value="${esc(d.tv || "")}" placeholder="marca / modelo">
+    <label>Llave maestra</label>
+    <div class="llaveBtns">
+      ${LLAVE_OPTS.map(([val,label]) => `<button class="${llave===val ? 'on-'+val : ''}" data-hab="${hab}" data-val="${val}">${label}</button>`).join("")}
+    </div>
+  </div>`;
+}
+
+function drawFloors(){
+  const cont = document.getElementById("floorsContainer");
+  cont.innerHTML = FLOORS.map(f => `
+    <div class="floor">
+      <h2>${esc(f.title)}</h2>
+      <div class="rooms">${f.habs.map(h => roomHtml(h, f.cls)).join("")}</div>
+    </div>`).join("");
   wireGrid();
 }
 
 function wireGrid(){
   document.querySelectorAll(".colorInput").forEach(inp => {
-    inp.addEventListener("change", () => guardar(inp.dataset.hab, { color_suelo_bano: inp.value.trim() }));
+    inp.addEventListener("change", () => guardar(inp.dataset.hab, { [inp.dataset.field]: inp.value.trim() }));
   });
   document.querySelectorAll(".llaveBtns button").forEach(btn => {
     btn.addEventListener("click", () => guardar(btn.dataset.hab, { llave_maestra: btn.dataset.val }));
@@ -288,27 +230,26 @@ function wireGrid(){
 
 async function guardar(hab, cambios){
   datos[hab] = { ...(datos[hab]||{}), ...cambios };
-  // repinto solo los botones de llave de esa fila para que se vea el cambio al toque
-  const row = document.querySelector(`.drow[data-hab="${hab}"]`);
-  if (row){
-    row.querySelectorAll(".llaveBtns button").forEach(b => {
+  const room = document.querySelector(`.room[data-hab="${hab}"]`);
+  if (room){
+    room.querySelectorAll(".llaveBtns button").forEach(b => {
       b.classList.toggle("on-"+b.dataset.val, datos[hab].llave_maestra === b.dataset.val);
     });
+    const dot = room.querySelector(".llaveDot");
+    if (dot) dot.className = "llaveDot " + (datos[hab].llave_maestra === "ok" ? "ok" : datos[hab].llave_maestra === "falla" ? "falla" : "");
   }
   if (!sb){ document.getElementById("connErr").style.display = "block"; return; }
   try{
     const { error } = await sb.from("mapa_datos").upsert({ hab, ...cambios, updated_at: new Date().toISOString() });
     if (error) throw error;
     document.getElementById("connErr").style.display = "none";
-    const tag = document.getElementById("saved-"+hab);
-    if (tag){ tag.classList.add("show"); setTimeout(() => tag.classList.remove("show"), 1500); }
   }catch(e){
     document.getElementById("connErr").style.display = "block";
   }
 }
 
 async function cargar(){
-  if (!sb){ document.getElementById("connErr").style.display = "block"; drawGrid(); return; }
+  if (!sb){ document.getElementById("connErr").style.display = "block"; drawFloors(); return; }
   try{
     const { data, error } = await sb.from("mapa_datos").select("*");
     if (error) throw error;
@@ -318,7 +259,7 @@ async function cargar(){
   }catch(e){
     document.getElementById("connErr").style.display = "block";
   }
-  drawGrid();
+  drawFloors();
 }
 
 function subscribeLive(){
@@ -328,10 +269,10 @@ function subscribeLive(){
       const row = payload.new || payload.old || {};
       if (!row.hab) return;
       datos[row.hab] = payload.new || datos[row.hab];
-      // si estoy escribiendo justo en ese apto, no le piso el input mientras tipeo
+      /* si estoy escribiendo justo en ese apto, no le piso el input mientras tipeo */
       const activo = document.activeElement;
       if (activo && activo.dataset && activo.dataset.hab === row.hab && activo.tagName === "INPUT") return;
-      drawGrid();
+      drawFloors();
     }).subscribe(status => { if (["CLOSED","CHANNEL_ERROR","TIMED_OUT"].includes(status)) setTimeout(subscribeLive, 3000); });
   }catch(e){}
 }
